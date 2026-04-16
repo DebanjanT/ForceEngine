@@ -1,0 +1,122 @@
+#version 450
+#extension GL_EXT_shader_atomic_float : enable
+
+layout(local_size_x = 64) in;
+
+// ---- Particle struct (matches ParticleGPU in C++) ----------------------------
+struct Particle {
+    vec4 position;   // xyz = pos, w = age [0,1]
+    vec4 velocity;   // xyz = vel, w = lifetime
+    vec4 color;
+    vec2 size;
+    float rotation;
+    float _pad;
+};
+
+// ---- Emitter uniform ---------------------------------------------------------
+layout(set = 0, binding = 0) uniform ParticleUBO {
+    vec4  emitterPosition;
+    vec4  gravityDrag;      // xyz = gravity, w = drag
+    vec4  velocityMin;
+    vec4  velocityMax;
+    vec4  colorStart;
+    vec4  colorEnd;
+    vec2  sizeStart;
+    vec2  sizeEnd;
+    float lifetimeMin;
+    float lifetimeMax;
+    float deltaTime;
+    float totalTime;
+    uint  emitCount;
+    uint  maxParticles;
+    uint  emitterShapeType; // 0=Point, 1=Sphere, 2=Cone
+    float emitterRadius;
+    float emitterAngle;
+    uint  randomSeed;
+    uint  _pad[2];
+} ubo;
+
+layout(set = 0, binding = 1) buffer ParticleBuffer  { Particle particles[]; };
+layout(set = 0, binding = 2) buffer IndirectBuffer  { uint vertexCount; uint instanceCount;
+                                                       uint firstVertex; uint firstInstance; };
+
+// ---- Simple hash-based RNG ---------------------------------------------------
+uint pcg(uint v) {
+    uint s = v * 747796405u + 2891336453u;
+    uint w = ((s >> ((s >> 28u) + 4u)) ^ s) * 277803737u;
+    return (w >> 22u) ^ w;
+}
+float rand(inout uint seed) {
+    seed = pcg(seed);
+    return float(seed) / 4294967296.0;
+}
+float randRange(inout uint seed, float lo, float hi) { return lo + rand(seed) * (hi - lo); }
+vec3 randVec3(inout uint seed, vec3 lo, vec3 hi) {
+    return vec3(randRange(seed, lo.x, hi.x),
+                randRange(seed, lo.y, hi.y),
+                randRange(seed, lo.z, hi.z));
+}
+
+// ---- Main --------------------------------------------------------------------
+void main() {
+    uint id = gl_GlobalInvocationID.x;
+    if (id >= ubo.maxParticles) return;
+
+    uint seed = pcg(ubo.randomSeed + id * 1973u + uint(ubo.totalTime * 1000.0));
+
+    Particle p = particles[id];
+    float age01 = p.position.w;
+
+    // --- Spawn dead particles if emit budget available ------------------------
+    bool dead = (age01 >= 1.0);
+    if (dead && id < ubo.emitCount) {
+        float lifetime = randRange(seed, ubo.lifetimeMin, ubo.lifetimeMax);
+
+        // Spawn position based on emitter shape
+        vec3 spawnPos = ubo.emitterPosition.xyz;
+        if (ubo.emitterShapeType == 1) { // Sphere
+            vec3 dir = normalize(vec3(rand(seed)*2.0-1.0, rand(seed)*2.0-1.0, rand(seed)*2.0-1.0));
+            spawnPos += dir * ubo.emitterRadius * rand(seed);
+        } else if (ubo.emitterShapeType == 2) { // Cone
+            float theta = rand(seed) * 6.2831853;
+            float r     = rand(seed) * ubo.emitterRadius;
+            float h     = r / tan(ubo.emitterAngle);
+            spawnPos   += vec3(r * cos(theta), h, r * sin(theta));
+        }
+
+        p.position  = vec4(spawnPos, 0.0);
+        p.velocity  = vec4(randVec3(seed, ubo.velocityMin.xyz, ubo.velocityMax.xyz), lifetime);
+        p.color     = ubo.colorStart;
+        p.size      = ubo.sizeStart;
+        p.rotation  = 0.0;
+        particles[id] = p;
+        return;
+    }
+
+    if (dead) return;
+
+    // --- Integrate alive particle ---------------------------------------------
+    float dt       = ubo.deltaTime;
+    float lifetime = p.velocity.w;
+    float drag     = ubo.gravityDrag.w;
+    vec3  gravity  = ubo.gravityDrag.xyz;
+
+    vec3 vel       = p.velocity.xyz;
+    vel           += gravity * dt;
+    vel           -= vel * drag * dt;
+    p.position.xyz += vel * dt;
+    p.velocity.xyz  = vel;
+
+    float newAge = p.position.w + dt / lifetime;
+    p.position.w = clamp(newAge, 0.0, 1.0);
+
+    float t   = p.position.w;
+    p.color   = mix(ubo.colorStart, ubo.colorEnd,   t);
+    p.size    = mix(ubo.sizeStart,  ubo.sizeEnd,    t);
+
+    particles[id] = p;
+
+    // Update alive vertex count (atomic max approximation via single-thread write for slot 0)
+    if (newAge < 1.0 && id == 0)
+        vertexCount = ubo.maxParticles;  // simplified: always draw all, shader clips by age
+}

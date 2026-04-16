@@ -40,6 +40,18 @@ set(ENGINE_SOURCES
     # Scene
     Source/Scene/SceneSerializer.cpp
     
+    # Physics
+    Source/Physics/PhysicsEngine.cpp
+    Source/Physics/PhysicsBody.cpp
+    Source/Physics/CharacterController.cpp
+    Source/Physics/PhysicsDebugRenderer.cpp
+    Source/Physics/DestructionSystem.cpp
+
+    # Particle System & VFX
+    Source/Renderer/ParticleSystem.cpp
+    Source/Renderer/DecalSystem.cpp
+    Source/VFX/VFXGraph.cpp
+
     # Animation
     Source/Animation/Socket.cpp
     Source/Animation/Skeleton.cpp
@@ -112,6 +124,18 @@ set(ENGINE_HEADERS
     Include/Force/Scene/SceneSerializer.h
     Include/Force/Scene/Components.h
     
+    # Physics
+    Include/Force/Physics/PhysicsEngine.h
+    Include/Force/Physics/PhysicsBody.h
+    Include/Force/Physics/CharacterController.h
+    Include/Force/Physics/PhysicsDebugRenderer.h
+    Include/Force/Physics/DestructionSystem.h
+
+    # Particle System & VFX
+    Include/Force/Renderer/ParticleSystem.h
+    Include/Force/Renderer/DecalSystem.h
+    Include/Force/VFX/VFXGraph.h
+
     # Animation
     Include/Force/Animation/Socket.h
     Include/Force/Animation/Skeleton.h
@@ -153,9 +177,13 @@ target_link_libraries(ForceEngine
         nlohmann_json::nlohmann_json
         imgui
         OpenAL
+        Jolt
 )
 
-target_compile_definitions(ForceEngine PUBLIC FORCE_AUDIO_OPENAL)
+target_compile_definitions(ForceEngine PUBLIC
+    FORCE_AUDIO_OPENAL
+    FORCE_PHYSICS_JOLT
+)
 
 if(FORCE_ENABLE_PROFILING)
     target_link_libraries(ForceEngine PUBLIC Tracy::TracyClient)

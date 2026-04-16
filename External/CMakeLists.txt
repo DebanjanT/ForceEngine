@@ -48,6 +48,13 @@ add_subdirectory(assimp)
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory(json)
 
+# Jolt Physics - rigid body simulation
+set(JPH_ENABLE_INSTALL                  OFF CACHE BOOL "" FORCE)
+set(JPH_BUILD_UNIT_TESTS                OFF CACHE BOOL "" FORCE)
+set(JPH_BUILD_PERFORMANCE_TEST          OFF CACHE BOOL "" FORCE)
+set(USE_STATIC_MSVC_RUNTIME_LIBRARY     OFF CACHE BOOL "" FORCE)
+add_subdirectory(JoltPhysics/Build)
+
 # OpenAL Soft - 3D positional audio
 set(ALSOFT_EXAMPLES  OFF CACHE BOOL "" FORCE)
 set(ALSOFT_TESTS     OFF CACHE BOOL "" FORCE)
