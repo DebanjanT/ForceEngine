@@ -31,6 +31,20 @@ set(ENGINE_SOURCES
     Source/Renderer/RenderGraph.cpp
     Source/Renderer/Material.cpp
     Source/Renderer/DebugRenderer.cpp
+    
+    # Asset
+    Source/Asset/AssetRegistry.cpp
+    Source/Asset/AssetImporter.cpp
+    Source/Asset/MeshAsset.cpp
+    
+    # Scene
+    Source/Scene/SceneSerializer.cpp
+    
+    # Animation
+    Source/Animation/Socket.cpp
+    
+    # Editor
+    Source/Editor/SceneHierarchyPanel.cpp
 )
 
 set(ENGINE_HEADERS
@@ -73,6 +87,24 @@ set(ENGINE_HEADERS
     
     # Math
     Include/Force/Math/Math.h
+    
+    # Asset
+    Include/Force/Asset/AssetTypes.h
+    Include/Force/Asset/Asset.h
+    Include/Force/Asset/AssetRegistry.h
+    Include/Force/Asset/AssetImporter.h
+    Include/Force/Asset/TextureAsset.h
+    Include/Force/Asset/MeshAsset.h
+    
+    # Scene
+    Include/Force/Scene/SceneSerializer.h
+    Include/Force/Scene/Components.h
+    
+    # Animation
+    Include/Force/Animation/Socket.h
+    
+    # Editor
+    Include/Force/Editor/SceneHierarchyPanel.h
 )
 
 add_library(ForceEngine STATIC ${ENGINE_SOURCES} ${ENGINE_HEADERS})
@@ -92,6 +124,10 @@ target_link_libraries(ForceEngine
         spdlog::spdlog
         VulkanMemoryAllocator
         EnTT
+        stb
+        assimp::assimp
+        nlohmann_json::nlohmann_json
+        imgui
 )
 
 if(FORCE_ENABLE_PROFILING)
