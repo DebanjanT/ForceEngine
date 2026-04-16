@@ -25,6 +25,12 @@ set(ENGINE_SOURCES
     Source/Renderer/VulkanBuffer.cpp
     Source/Renderer/VulkanCommandBuffer.cpp
     Source/Renderer/Renderer.cpp
+    Source/Renderer/Mesh.cpp
+    Source/Renderer/Shader.cpp
+    Source/Renderer/Texture.cpp
+    Source/Renderer/RenderGraph.cpp
+    Source/Renderer/Material.cpp
+    Source/Renderer/DebugRenderer.cpp
 )
 
 set(ENGINE_HEADERS
@@ -58,6 +64,12 @@ set(ENGINE_HEADERS
     Include/Force/Renderer/VulkanCommandBuffer.h
     Include/Force/Renderer/Renderer.h
     Include/Force/Renderer/RendererTypes.h
+    Include/Force/Renderer/Mesh.h
+    Include/Force/Renderer/Shader.h
+    Include/Force/Renderer/Texture.h
+    Include/Force/Renderer/RenderGraph.h
+    Include/Force/Renderer/Material.h
+    Include/Force/Renderer/DebugRenderer.h
     
     # Math
     Include/Force/Math/Math.h

@@ -21,15 +21,6 @@ namespace Force
         bool VSync = true;
     };
     
-    // Vertex structure
-    struct Vertex
-    {
-        float Position[3];
-        float Normal[3];
-        float TexCoord[2];
-        float Color[4];
-    };
-    
     // Buffer types
     enum class BufferType : u8
     {
@@ -38,17 +29,6 @@ namespace Force
         Uniform,
         Storage,
         Staging
-    };
-    
-    // Shader stages
-    enum class ShaderStage : u8
-    {
-        Vertex,
-        Fragment,
-        Compute,
-        Geometry,
-        TessControl,
-        TessEvaluation
     };
     
     // Texture formats
