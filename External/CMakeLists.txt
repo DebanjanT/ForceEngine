@@ -48,6 +48,13 @@ add_subdirectory(assimp)
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory(json)
 
+# OpenAL Soft - 3D positional audio
+set(ALSOFT_EXAMPLES  OFF CACHE BOOL "" FORCE)
+set(ALSOFT_TESTS     OFF CACHE BOOL "" FORCE)
+set(ALSOFT_INSTALL   OFF CACHE BOOL "" FORCE)
+set(ALSOFT_UTILS     OFF CACHE BOOL "" FORCE)
+add_subdirectory(openal-soft)
+
 # Dear ImGui - Immediate mode GUI
 add_library(imgui STATIC
     imgui/imgui.cpp

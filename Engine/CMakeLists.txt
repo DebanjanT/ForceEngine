@@ -42,7 +42,19 @@ set(ENGINE_SOURCES
     
     # Animation
     Source/Animation/Socket.cpp
-    
+    Source/Animation/Skeleton.cpp
+    Source/Animation/AnimationClip.cpp
+    Source/Animation/AnimationStateMachine.cpp
+    Source/Animation/AnimNotify.cpp
+
+    # Audio
+    Source/Audio/AudioSource.cpp
+    Source/Audio/AudioEngine.cpp
+
+    # Renderer (Static Mesh)
+    Source/Renderer/FrustumCuller.cpp
+    Source/Renderer/StaticMeshRenderer.cpp
+
     # Editor
     Source/Editor/SceneHierarchyPanel.cpp
 )
@@ -102,7 +114,19 @@ set(ENGINE_HEADERS
     
     # Animation
     Include/Force/Animation/Socket.h
-    
+    Include/Force/Animation/Skeleton.h
+    Include/Force/Animation/AnimationClip.h
+    Include/Force/Animation/AnimationStateMachine.h
+    Include/Force/Animation/AnimNotify.h
+
+    # Audio
+    Include/Force/Audio/AudioSource.h
+    Include/Force/Audio/AudioEngine.h
+
+    # Renderer (Static Mesh)
+    Include/Force/Renderer/FrustumCuller.h
+    Include/Force/Renderer/StaticMeshRenderer.h
+
     # Editor
     Include/Force/Editor/SceneHierarchyPanel.h
 )
@@ -116,7 +140,7 @@ target_include_directories(ForceEngine
         ${CMAKE_CURRENT_SOURCE_DIR}/Source
 )
 
-target_link_libraries(ForceEngine 
+target_link_libraries(ForceEngine
     PUBLIC
         Vulkan::Vulkan
         glfw
@@ -128,7 +152,10 @@ target_link_libraries(ForceEngine
         assimp::assimp
         nlohmann_json::nlohmann_json
         imgui
+        OpenAL
 )
+
+target_compile_definitions(ForceEngine PUBLIC FORCE_AUDIO_OPENAL)
 
 if(FORCE_ENABLE_PROFILING)
     target_link_libraries(ForceEngine PUBLIC Tracy::TracyClient)
