@@ -1,0 +1,52 @@
+# Build directories
+Build/
+build/
+out/
+cmake-build-*/
+
+# IDE
+.vs/
+.vscode/
+*.suo
+*.user
+*.sln.docstates
+.idea/
+*.swp
+
+# Compiled files
+*.obj
+*.o
+*.a
+*.lib
+*.dll
+*.so
+*.dylib
+*.exe
+*.pdb
+*.ilk
+*.exp
+
+# External dependencies (cloned by setup script)
+External/glfw/
+External/glm/
+External/spdlog/
+External/VulkanMemoryAllocator/
+External/tracy/
+External/imgui/
+External/entt/
+
+# Logs
+*.log
+ForceEngine.log
+
+# Cooked content (generated)
+CookedContent/
+
+# Temporary files
+*.tmp
+*.temp
+~*
+
+# OS files
+.DS_Store
+Thumbs.db
