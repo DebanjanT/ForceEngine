@@ -1,6 +1,9 @@
 #include "Force/Renderer/Renderer.h"
 #include "Force/Core/Application.h"
 #include "Force/Core/Logger.h"
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
 
 namespace Force
 {
@@ -16,8 +19,9 @@ namespace Force
     u32  Renderer::s_CurrentFrame       = 0;
     u32  Renderer::s_MaxFramesInFlight  = 2;
     bool Renderer::s_FramebufferResized = false;
+    bool Renderer::s_FrameStarted       = false;
 
-    glm::vec4 Renderer::s_ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
+    glm::vec4 Renderer::s_ClearColor = { 0.04f, 0.04f, 0.05f, 1.0f };
 
     VkDescriptorPool                        Renderer::s_DescriptorPool             = VK_NULL_HANDLE;
     VkDescriptorSetLayout                   Renderer::s_CameraDescriptorSetLayout  = VK_NULL_HANDLE;
@@ -53,6 +57,7 @@ namespace Force
         CreateDescriptorPool();
         CreateCameraResources();
 
+        InitImGui();
         FORCE_CORE_INFO("Renderer initialized successfully");
     }
 
@@ -61,6 +66,7 @@ namespace Force
         FORCE_CORE_INFO("Shutting down Renderer...");
 
         s_Device->WaitIdle();
+        ShutdownImGui();
 
         // Camera resources
         s_CameraUBOs.clear();
@@ -103,6 +109,7 @@ namespace Force
         {
             OnWindowResize(Application::Get().GetWindow().GetWidth(),
                            Application::Get().GetWindow().GetHeight());
+            s_FrameStarted = false;
             return;
         }
 
@@ -146,11 +153,21 @@ namespace Force
         scissor.offset = {0, 0};
         scissor.extent = s_Swapchain->GetExtent();
         vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+        // Start ImGui frame after Vulkan render pass is open
+        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        s_FrameStarted = true;
     }
 
     void Renderer::EndFrame()
     {
+        if (!s_FrameStarted) return;
+        s_FrameStarted = false;
+
         VkCommandBuffer cmd = s_CommandBuffers[s_CurrentFrame];
+        RenderImGui(cmd);
 
         vkCmdEndRenderPass(cmd);
         vkEndCommandBuffer(cmd);
@@ -329,5 +346,51 @@ namespace Force
 
             vkUpdateDescriptorSets(device, 1, &write, 0, nullptr);
         }
+    }
+
+    // ─── ImGui ────────────────────────────────────────────────────────────────
+
+    void Renderer::InitImGui()
+    {
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+
+        ImGuiIO& io = ImGui::GetIO();
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+        GLFWwindow* window = Application::Get().GetWindow().GetNativeWindow();
+        ImGui_ImplGlfw_InitForVulkan(window, true);
+
+        ImGui_ImplVulkan_InitInfo initInfo{};
+        initInfo.ApiVersion      = VK_API_VERSION_1_3;
+        initInfo.Instance        = s_Context->GetInstance();
+        initInfo.PhysicalDevice  = s_Device->GetPhysicalDevice();
+        initInfo.Device          = s_Device->GetDevice();
+        initInfo.QueueFamily     = s_Device->GetQueueFamilies().GraphicsFamily.value();
+        initInfo.Queue           = s_Device->GetGraphicsQueue();
+        initInfo.DescriptorPool  = s_DescriptorPool;
+        initInfo.MinImageCount   = 2;
+        initInfo.ImageCount      = s_Swapchain->GetImageCount();
+        initInfo.PipelineInfoMain.RenderPass  = s_Swapchain->GetRenderPass();
+        initInfo.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+        ImGui_ImplVulkan_Init(&initInfo);
+        // Fonts are uploaded automatically inside Init in this ImGui version
+
+        FORCE_CORE_INFO("ImGui initialized");
+    }
+
+    void Renderer::ShutdownImGui()
+    {
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+    }
+
+    void Renderer::RenderImGui(VkCommandBuffer cmd)
+    {
+        ImGui::Render();
+        ImDrawData* drawData = ImGui::GetDrawData();
+        if (drawData) ImGui_ImplVulkan_RenderDrawData(drawData, cmd);
     }
 }

@@ -4,50 +4,54 @@
 
 namespace Force
 {
+    static ForceEditor::EditorLayer* s_Layer = nullptr;
+
     EditorApp::EditorApp(const ApplicationConfig& config)
         : Application(config)
     {
     }
-    
+
     EditorApp::~EditorApp()
     {
+        delete s_Layer;
     }
-    
+
     void EditorApp::OnInit()
     {
+        s_Layer = new ForceEditor::EditorLayer();
+        s_Layer->OnAttach();
         FORCE_INFO("Force Editor initialized");
     }
-    
+
     void EditorApp::OnShutdown()
     {
+        s_Layer->OnDetach();
         FORCE_INFO("Force Editor shutting down");
     }
-    
+
     void EditorApp::OnUpdate(f32 deltaTime)
     {
-        // Update editor systems
+        s_Layer->OnUpdate(deltaTime);
     }
-    
+
     void EditorApp::OnRender()
     {
-        // Render scene
+        s_Layer->OnRender();
     }
-    
+
     void EditorApp::OnImGuiRender()
     {
-        // Render editor UI
+        s_Layer->OnImGuiRender();
     }
 }
 
-// Entry point
 Force::Application* Force::CreateApplication(int argc, char** argv)
 {
     Force::ApplicationConfig config;
-    config.Name = "Force Editor";
-    config.WindowWidth = 1920;
-    config.WindowHeight = 1080;
+    config.Name          = "Force Editor";
+    config.WindowWidth   = 1920;
+    config.WindowHeight  = 1080;
     config.EnableValidation = true;
-    
     return new Force::EditorApp(config);
 }
 

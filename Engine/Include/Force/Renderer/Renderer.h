@@ -57,6 +57,9 @@ namespace Force
         static void CreateCommandBuffers();
         static void CreateDescriptorPool();
         static void CreateCameraResources();
+        static void InitImGui();
+        static void ShutdownImGui();
+        static void RenderImGui(VkCommandBuffer cmd);
 
     private:
         static Scope<VulkanContext>   s_Context;
@@ -71,6 +74,7 @@ namespace Force
         static u32  s_CurrentFrame;
         static u32  s_MaxFramesInFlight;
         static bool s_FramebufferResized;
+        static bool s_FrameStarted;
 
         static glm::vec4 s_ClearColor;
 

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmake ..)",
+      "Bash(cmake --build d:/ForceEngine/Build --config Debug --target ForceEditor)",
+      "Bash(./ForceEditor.exe)",
+      "Bash(kill %1)",
+      "Bash(grep -E \"^.*error C|ForceEditor\\\\.exe$\")"
+    ]
+  }
+}

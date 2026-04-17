@@ -254,7 +254,7 @@ namespace Force
                     changed = ImGui::ColorEdit4(key.c_str(), &v.x);
                 else if constexpr (std::is_same_v<T, std::string>)
                 {
-                    char buf[256]; strncpy(buf, v.c_str(), sizeof(buf)-1); buf[255] = 0;
+                    char buf[256]; strncpy_s(buf, sizeof(buf), v.c_str(), sizeof(buf)-1);
                     if (ImGui::InputText(key.c_str(), buf, sizeof(buf))) { v = buf; changed = true; }
                 }
             }, val);

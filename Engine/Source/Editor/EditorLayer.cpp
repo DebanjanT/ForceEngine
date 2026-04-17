@@ -90,7 +90,7 @@ namespace Force
 
     void EditorLayer::End()
     {
-        ImGui::Render();
+        // ImGui::Render() + RenderDrawData are called by Renderer::EndFrame
     }
 
     void EditorLayer::OnImGui()

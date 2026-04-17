@@ -1,6 +1,7 @@
 CompileFlags:
   Add:
     - -ID:/ForceEngine/Engine/Include
+    - -ID:/ForceEngine/Editor/Include
     - -ID:/ForceEngine/External/imgui
     - -ID:/ForceEngine/External/imgui/backends
     - -ID:/ForceEngine/External/glm

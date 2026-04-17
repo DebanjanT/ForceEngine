@@ -17,7 +17,7 @@ namespace Force
         ImVec4 BgLight      = ImVec4(0.22f, 0.22f, 0.25f, 1.0f);
         ImVec4 Text         = ImVec4(0.90f, 0.90f, 0.90f, 1.0f);
         ImVec4 TextDisabled = ImVec4(0.50f, 0.50f, 0.50f, 1.0f);
-        float  Rounding     = 4.0f;
+        float  Rounding     = 2.0f;
     };
 
     class EditorLayer

@@ -80,6 +80,10 @@ set(ENGINE_SOURCES
 
     # Editor
     Source/Editor/SceneHierarchyPanel.cpp
+    Source/Editor/EditorCamera.cpp
+    Source/Editor/PropertiesPanel.cpp
+    Source/Editor/ContentBrowserPanel.cpp
+    Source/Editor/OutputLogPanel.cpp
     Source/Editor/UndoRedo.cpp
     Source/Editor/NodeGraphEditor.cpp
     Source/Editor/Widgets.cpp
@@ -188,6 +192,10 @@ set(ENGINE_HEADERS
 
     # Editor
     Include/Force/Editor/SceneHierarchyPanel.h
+    Include/Force/Editor/EditorCamera.h
+    Include/Force/Editor/PropertiesPanel.h
+    Include/Force/Editor/ContentBrowserPanel.h
+    Include/Force/Editor/OutputLogPanel.h
     Include/Force/Editor/UndoRedo.h
     Include/Force/Editor/NodeGraphEditor.h
     Include/Force/Editor/Widgets.h

@@ -35,11 +35,7 @@ namespace Force
                 
                 Renderer::BeginFrame();
                 OnRender();
-                
-                #ifdef FORCE_EDITOR_BUILD
                 OnImGuiRender();
-                #endif
-                
                 Renderer::EndFrame();
             }
             

@@ -210,8 +210,7 @@ namespace Force
             auto& tag = registry.get<TagComponent>(entity);
 
             char buffer[256];
-            std::strncpy(buffer, tag.Tag.c_str(), sizeof(buffer));
-            buffer[sizeof(buffer) - 1] = '\0';
+            strncpy_s(buffer, sizeof(buffer), tag.Tag.c_str(), sizeof(buffer) - 1);
 
             if (ImGui::InputText("##Tag", buffer, sizeof(buffer)))
             {
