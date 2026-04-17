@@ -1,0 +1,113 @@
+#version 450
+
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform DDGIProbeUBO {
+    vec4  GridOriginSpacing; // xyz=origin, w=spacing
+    ivec4 GridDims;          // xyz=dims, w=raysPerProbe
+    vec4  Params;            // x=hysteresis, y=probesPerFrame, z=totalProbes, w=frameIdx
+} ddgi;
+
+layout(set = 0, binding = 1, rgba16f) uniform image2D irradianceAtlas;
+layout(set = 0, binding = 2, rg16f)   uniform image2D depthAtlas;
+layout(set = 0, binding = 3) uniform texture2D gbufferAlbedo;
+layout(set = 0, binding = 4) uniform texture2D gbufferNormal;
+layout(set = 0, binding = 5) uniform texture2D gbufferDepth;
+layout(set = 0, binding = 6) uniform sampler   gbufferSampler;
+
+const float PI   = 3.14159265358979;
+const int   IRRADIANCE_TEXELS = 8;
+const int   DEPTH_TEXELS      = 16;
+
+// PCG hash for reproducible per-probe random directions
+uvec3 pcg3d(uvec3 v)
+{
+    v = v * 1664525u + 1013904223u;
+    v.x += v.y * v.z; v.y += v.z * v.x; v.z += v.x * v.y;
+    v ^= v >> 16u;
+    v.x += v.y * v.z; v.y += v.z * v.x; v.z += v.x * v.y;
+    return v;
+}
+
+vec3 RandomDirection(uint probeIdx, uint rayIdx, uint frame)
+{
+    uvec3 h  = pcg3d(uvec3(probeIdx, rayIdx, frame));
+    vec3  rnd = vec3(h) / float(0xFFFFFFFFu);
+    float phi   = 2.0 * PI * rnd.x;
+    float cosT  = 1.0 - 2.0 * rnd.y;
+    float sinT  = sqrt(1.0 - cosT * cosT);
+    return vec3(cos(phi) * sinT, sin(phi) * sinT, cosT);
+}
+
+vec3 ProbePosition(uint probeIdx)
+{
+    int dX = ddgi.GridDims.x, dY = ddgi.GridDims.y, dZ = ddgi.GridDims.z;
+    int iz = int(probeIdx) / (dX * dY);
+    int iy = (int(probeIdx) % (dX * dY)) / dX;
+    int ix = int(probeIdx) % dX;
+    return ddgi.GridOriginSpacing.xyz + vec3(ix, iy, iz) * ddgi.GridOriginSpacing.w;
+}
+
+// Screen-space GI fallback: sample the GBuffer along a random screen direction
+// and accumulate radiance into the probe
+vec3 SampleGBuffer(vec3 probePos, vec3 dir)
+{
+    // Project ray direction to screen (simplified — approximation)
+    vec2 uv = dir.xz * 0.5 + 0.5;
+    vec3 albedo = texture(sampler2D(gbufferAlbedo, gbufferSampler), uv).rgb;
+    vec3 normal = texture(sampler2D(gbufferNormal, gbufferSampler), uv).rgb * 2.0 - 1.0;
+    float NoD   = max(dot(normalize(normal), -dir), 0.0);
+    // Approximate: lit surface radiates albedo * NoD
+    return albedo * NoD;
+}
+
+void main()
+{
+    uint localProbeIdx = gl_GlobalInvocationID.x;
+    uint probesPerFrame = uint(ddgi.Params.y);
+    uint totalProbes    = uint(ddgi.Params.z);
+    uint frame          = uint(ddgi.Params.w);
+
+    if (localProbeIdx >= probesPerFrame) return;
+
+    // Round-robin through all probes across frames
+    uint probeIdx = (frame * probesPerFrame + localProbeIdx) % totalProbes;
+    int  raysPerProbe = ddgi.GridDims.w;
+
+    vec3 probePos = ProbePosition(probeIdx);
+
+    // Accumulate irradiance from all ray samples
+    vec3 irradianceAccum = vec3(0.0);
+    float weightSum      = 0.0;
+
+    for (int r = 0; r < raysPerProbe; r++)
+    {
+        vec3 dir     = RandomDirection(probeIdx, uint(r), frame);
+        vec3 radiance = SampleGBuffer(probePos, dir);
+        float weight  = max(0.0, dir.y); // cosine-weighted hemisphere
+        irradianceAccum += radiance * weight;
+        weightSum       += weight;
+    }
+    if (weightSum > 0.0) irradianceAccum /= weightSum;
+
+    // Compute atlas texel offset for this probe
+    int dX = ddgi.GridDims.x, dZ = ddgi.GridDims.z;
+    int iz = int(probeIdx) / (dX * ddgi.GridDims.y);
+    int iy = (int(probeIdx) % (dX * ddgi.GridDims.y)) / dX;
+    int ix = int(probeIdx) % dX;
+
+    int atlasX = (iz * dX + ix) * IRRADIANCE_TEXELS;
+    int atlasY = iy * IRRADIANCE_TEXELS;
+
+    float hysteresis = ddgi.Params.x;
+
+    // Write to all texels in this probe's 8x8 region
+    for (int py = 0; py < IRRADIANCE_TEXELS; py++)
+    for (int px = 0; px < IRRADIANCE_TEXELS; px++)
+    {
+        ivec2 texel = ivec2(atlasX + px, atlasY + py);
+        vec4  prev  = imageLoad(irradianceAtlas, texel);
+        vec4  next  = vec4(irradianceAccum, 1.0);
+        imageStore(irradianceAtlas, texel, mix(next, prev, hysteresis));
+    }
+}

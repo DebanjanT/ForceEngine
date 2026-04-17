@@ -67,6 +67,17 @@ set(ENGINE_SOURCES
     Source/Renderer/FrustumCuller.cpp
     Source/Renderer/StaticMeshRenderer.cpp
 
+    # Terrain
+    Source/Terrain/TerrainSystem.cpp
+    Source/Terrain/TerrainSculptor.cpp
+    Source/Terrain/TerrainPainter.cpp
+
+    # Lighting & GI
+    Source/Renderer/ShadowSystem.cpp
+    Source/Renderer/AtmosphereRenderer.cpp
+    Source/Renderer/ClusteredLighting.cpp
+    Source/Renderer/DDGISystem.cpp
+
     # Editor
     Source/Editor/SceneHierarchyPanel.cpp
 )
@@ -150,6 +161,18 @@ set(ENGINE_HEADERS
     # Renderer (Static Mesh)
     Include/Force/Renderer/FrustumCuller.h
     Include/Force/Renderer/StaticMeshRenderer.h
+
+    # Terrain
+    Include/Force/Terrain/TerrainSystem.h
+    Include/Force/Terrain/TerrainSculptor.h
+    Include/Force/Terrain/TerrainPainter.h
+
+    # Lighting & GI
+    Include/Force/Renderer/LightTypes.h
+    Include/Force/Renderer/ShadowSystem.h
+    Include/Force/Renderer/AtmosphereRenderer.h
+    Include/Force/Renderer/ClusteredLighting.h
+    Include/Force/Renderer/DDGISystem.h
 
     # Editor
     Include/Force/Editor/SceneHierarchyPanel.h

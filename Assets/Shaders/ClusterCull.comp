@@ -1,0 +1,72 @@
+#version 450
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform ClusterUBO {
+    mat4  InvProj;
+    vec4  ScreenNearFar;
+    uvec4 ClusterDims;
+} ubo;
+
+struct ClusterAABB   { vec4 Min; vec4 Max; };
+struct PointLightGPU { vec4 Position; vec4 Color; uint CastShadows; float _pad[3]; };
+struct SpotLightGPU  { vec4 Position; vec4 Direction; vec4 Color; float CosOuter; uint CastShadows; float _pad[2]; };
+struct LightGrid     { uint Offset; uint PointCount; uint SpotCount; uint _pad; };
+
+layout(set = 0, binding = 1) buffer ClusterAABBBuffer   { ClusterAABB   aabbs[]; };
+layout(set = 0, binding = 2) buffer PointLightBuffer    { PointLightGPU pointLights[]; };
+layout(set = 0, binding = 3) buffer SpotLightBuffer     { SpotLightGPU  spotLights[]; };
+layout(set = 0, binding = 4) buffer LightGridBuffer     { LightGrid     lightGrid[]; };
+layout(set = 0, binding = 5) buffer LightIndexBuffer    { uint          lightIndices[]; };
+
+// Atomic counter packed at the start of lightIndices
+layout(set = 0, binding = 5) buffer LightIndexCounter   { uint globalCount; };
+
+const uint MAX_LIGHTS_PER_CLUSTER = 64;
+
+bool SphereAABBIntersect(vec3 center, float radius, vec3 aabbMin, vec3 aabbMax)
+{
+    vec3 closest = clamp(center, aabbMin, aabbMax);
+    float d2 = dot(center - closest, center - closest);
+    return d2 <= radius * radius;
+}
+
+void main()
+{
+    uvec3 id = gl_GlobalInvocationID;
+    if (any(greaterThanEqual(id, ubo.ClusterDims.xyz))) return;
+
+    uint clusterIdx = id.x + id.y * ubo.ClusterDims.x + id.z * ubo.ClusterDims.x * ubo.ClusterDims.y;
+    vec3 aabbMin = aabbs[clusterIdx].Min.xyz;
+    vec3 aabbMax = aabbs[clusterIdx].Max.xyz;
+
+    // Count active lights (simple uniform reads — no push constants for count; check w=radius > 0)
+    uint ptCount = 0, spCount = 0;
+    uint ptIndices[MAX_LIGHTS_PER_CLUSTER];
+    uint spIndices[MAX_LIGHTS_PER_CLUSTER];
+
+    for (uint i = 0; i < 256u && ptCount < MAX_LIGHTS_PER_CLUSTER; i++)
+    {
+        vec4 pos  = pointLights[i].Position;
+        if (pos.w <= 0.0) break;
+        if (SphereAABBIntersect(pos.xyz, pos.w, aabbMin, aabbMax))
+            ptIndices[ptCount++] = i;
+    }
+    for (uint i = 0; i < 128u && spCount < MAX_LIGHTS_PER_CLUSTER; i++)
+    {
+        vec4 pos = spotLights[i].Position;
+        if (pos.w <= 0.0) break;
+        if (SphereAABBIntersect(pos.xyz, pos.w, aabbMin, aabbMax))
+            spIndices[spCount++] = i;
+    }
+
+    uint total  = ptCount + spCount;
+    uint offset = atomicAdd(globalCount, total);
+
+    for (uint i = 0; i < ptCount; i++) lightIndices[offset + i]           = ptIndices[i];
+    for (uint i = 0; i < spCount; i++) lightIndices[offset + ptCount + i] = spIndices[i];
+
+    lightGrid[clusterIdx].Offset     = offset;
+    lightGrid[clusterIdx].PointCount = ptCount;
+    lightGrid[clusterIdx].SpotCount  = spCount;
+}

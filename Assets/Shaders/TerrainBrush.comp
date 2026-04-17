@@ -1,0 +1,55 @@
+#version 450
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(set = 0, binding = 0, r32f) uniform image2D heightmap;
+
+layout(push_constant) uniform BrushPC {
+    vec2  BrushCenterUV;   // center in [0,1] UV
+    float BrushRadiusUV;   // radius in UV space
+    float Strength;
+    uint  BrushType;       // 0=raise 1=lower 2=flatten 3=smooth
+    float TargetHeight;
+    uint  MapWidth;
+    uint  MapHeight;
+} pc;
+
+void main()
+{
+    ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
+    if (coord.x >= int(pc.MapWidth) || coord.y >= int(pc.MapHeight)) return;
+
+    vec2 uv   = (vec2(coord) + 0.5) / vec2(pc.MapWidth, pc.MapHeight);
+    vec2 diff = uv - pc.BrushCenterUV;
+    // Adjust for aspect ratio so brush is circular in world space
+    diff.x *= float(pc.MapWidth) / float(pc.MapHeight);
+    float dist = length(diff);
+    if (dist > pc.BrushRadiusUV) return;
+
+    float t      = 1.0 - clamp(dist / pc.BrushRadiusUV, 0.0, 1.0);
+    float weight = t * t * (3.0 - 2.0 * t); // smoothstep falloff
+
+    float h = imageLoad(heightmap, coord).r;
+
+    if (pc.BrushType == 0u) // Raise
+        h += pc.Strength * weight;
+    else if (pc.BrushType == 1u) // Lower
+        h -= pc.Strength * weight;
+    else if (pc.BrushType == 2u) // Flatten
+        h = mix(h, pc.TargetHeight, pc.Strength * weight);
+    else if (pc.BrushType == 3u) // Smooth (box blur 3x3)
+    {
+        float sum = 0.0; int cnt = 0;
+        for (int dy = -1; dy <= 1; dy++)
+        for (int dx = -1; dx <= 1; dx++)
+        {
+            ivec2 nc = clamp(coord + ivec2(dx, dy), ivec2(0), ivec2(pc.MapWidth - 1, pc.MapHeight - 1));
+            sum += imageLoad(heightmap, nc).r;
+            cnt++;
+        }
+        h = mix(h, sum / float(cnt), pc.Strength * weight);
+    }
+
+    h = clamp(h, 0.0, 1.0);
+    imageStore(heightmap, coord, vec4(h, 0, 0, 1));
+}

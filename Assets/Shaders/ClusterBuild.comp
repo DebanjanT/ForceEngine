@@ -1,0 +1,58 @@
+#version 450
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform ClusterUBO {
+    mat4  InvProj;
+    vec4  ScreenNearFar; // xy=screen dims, zw=near/far
+    uvec4 ClusterDims;   // xyz=CLUSTER_X/Y/Z
+} ubo;
+
+struct ClusterAABB { vec4 Min; vec4 Max; };
+layout(set = 0, binding = 1) buffer ClusterAABBBuffer { ClusterAABB aabbs[]; };
+
+vec3 ClipToView(vec4 clip)
+{
+    vec4 v = ubo.InvProj * clip;
+    return v.xyz / v.w;
+}
+
+vec3 ScreenToView(vec2 screen)
+{
+    vec2 ndc = (screen / ubo.ScreenNearFar.xy) * 2.0 - 1.0;
+    return ClipToView(vec4(ndc, -1.0, 1.0));
+}
+
+void main()
+{
+    uvec3 id = gl_GlobalInvocationID;
+    if (any(greaterThanEqual(id, ubo.ClusterDims.xyz))) return;
+
+    float near = ubo.ScreenNearFar.z;
+    float far  = ubo.ScreenNearFar.w;
+    float tileW = ubo.ScreenNearFar.x / float(ubo.ClusterDims.x);
+    float tileH = ubo.ScreenNearFar.y / float(ubo.ClusterDims.y);
+
+    // Slice depths (exponential distribution)
+    float sliceNear = near * pow(far / near, float(id.z)       / float(ubo.ClusterDims.z));
+    float sliceFar  = near * pow(far / near, float(id.z + 1u)  / float(ubo.ClusterDims.z));
+
+    vec2 minSS = vec2(id.x, id.y) * vec2(tileW, tileH);
+    vec2 maxSS = minSS + vec2(tileW, tileH);
+
+    vec3 minVS = ScreenToView(minSS);
+    vec3 maxVS = ScreenToView(maxSS);
+
+    // Scale to near/far slice
+    vec3 minNear = minVS * sliceNear / near;
+    vec3 maxNear = maxVS * sliceNear / near;
+    vec3 minFar  = minVS * sliceFar  / near;
+    vec3 maxFar  = maxVS * sliceFar  / near;
+
+    vec3 lo = min(min(minNear, maxNear), min(minFar, maxFar));
+    vec3 hi = max(max(minNear, maxNear), max(minFar, maxFar));
+
+    uint idx = id.x + id.y * ubo.ClusterDims.x + id.z * ubo.ClusterDims.x * ubo.ClusterDims.y;
+    aabbs[idx].Min = vec4(lo, 0.0);
+    aabbs[idx].Max = vec4(hi, 0.0);
+}
