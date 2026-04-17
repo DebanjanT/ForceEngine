@@ -13,3 +13,12 @@
 [submodule "External/JoltPhysics"]
 	path = External/JoltPhysics
 	url = https://github.com/jrouwe/JoltPhysics
+[submodule "External/ImGuizmo"]
+	path = External/ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo
+[submodule "External/implot"]
+	path = External/implot
+	url = https://github.com/epezent/implot
+[submodule "External/imnodes"]
+	path = External/imnodes
+	url = https://github.com/Nelarius/imnodes
