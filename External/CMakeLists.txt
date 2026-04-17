@@ -77,3 +77,31 @@ target_include_directories(imgui PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends
 )
 target_link_libraries(imgui PUBLIC glfw Vulkan::Vulkan)
+
+# ImGuizmo - Gizmo manipulation (optional)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo/ImGuizmo.h)
+    add_library(ImGuizmo STATIC
+        ImGuizmo/ImGuizmo.cpp
+    )
+    target_include_directories(ImGuizmo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo)
+    target_link_libraries(ImGuizmo PUBLIC imgui)
+endif()
+
+# implot - Plotting widgets (optional)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/implot/implot.h)
+    add_library(implot STATIC
+        implot/implot.cpp
+        implot/implot_items.cpp
+    )
+    target_include_directories(implot PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/implot)
+    target_link_libraries(implot PUBLIC imgui)
+endif()
+
+# imnodes - Node editor (optional)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/imnodes/imnodes.h)
+    add_library(imnodes STATIC
+        imnodes/imnodes.cpp
+    )
+    target_include_directories(imnodes PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/imnodes)
+    target_link_libraries(imnodes PUBLIC imgui)
+endif()

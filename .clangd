@@ -1,0 +1,14 @@
+CompileFlags:
+  Add:
+    - -ID:/ForceEngine/Engine/Include
+    - -ID:/ForceEngine/External/imgui
+    - -ID:/ForceEngine/External/imgui/backends
+    - -ID:/ForceEngine/External/glm
+    - -ID:/ForceEngine/External/spdlog/include
+    - -ID:/ForceEngine/External/entt/single_include
+    - -ID:/ForceEngine/External/VulkanMemoryAllocator/include
+    - -ID:/ForceEngine/External/json/include
+    - -ID:/ForceEngine/External/ImGuizmo
+    - -ID:/ForceEngine/External/implot
+    - -ID:/ForceEngine/External/imnodes
+    - -std=c++17

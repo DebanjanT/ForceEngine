@@ -80,6 +80,18 @@ set(ENGINE_SOURCES
 
     # Editor
     Source/Editor/SceneHierarchyPanel.cpp
+    Source/Editor/UndoRedo.cpp
+    Source/Editor/NodeGraphEditor.cpp
+    Source/Editor/Widgets.cpp
+    Source/Editor/ViewportGizmo.cpp
+    Source/Editor/MaterialGraphPanel.cpp
+    Source/Editor/EditorLayer.cpp
+
+    # Material Graph
+    Source/Material/MaterialGraph.cpp
+
+    # Material Instance
+    Source/Renderer/MaterialInstance.cpp
 )
 
 set(ENGINE_HEADERS
@@ -176,6 +188,18 @@ set(ENGINE_HEADERS
 
     # Editor
     Include/Force/Editor/SceneHierarchyPanel.h
+    Include/Force/Editor/UndoRedo.h
+    Include/Force/Editor/NodeGraphEditor.h
+    Include/Force/Editor/Widgets.h
+    Include/Force/Editor/ViewportGizmo.h
+    Include/Force/Editor/MaterialGraphPanel.h
+    Include/Force/Editor/EditorLayer.h
+
+    # Material Graph
+    Include/Force/Material/MaterialGraph.h
+
+    # Material Instance
+    Include/Force/Renderer/MaterialInstance.h
 )
 
 add_library(ForceEngine STATIC ${ENGINE_SOURCES} ${ENGINE_HEADERS})
@@ -210,6 +234,21 @@ target_compile_definitions(ForceEngine PUBLIC
 
 if(FORCE_ENABLE_PROFILING)
     target_link_libraries(ForceEngine PUBLIC Tracy::TracyClient)
+endif()
+
+if(TARGET ImGuizmo)
+    target_link_libraries(ForceEngine PUBLIC ImGuizmo)
+    target_compile_definitions(ForceEngine PUBLIC FORCE_EDITOR_IMGUIZMO)
+endif()
+
+if(TARGET implot)
+    target_link_libraries(ForceEngine PUBLIC implot)
+    target_compile_definitions(ForceEngine PUBLIC FORCE_EDITOR_IMPLOT)
+endif()
+
+if(TARGET imnodes)
+    target_link_libraries(ForceEngine PUBLIC imnodes)
+    target_compile_definitions(ForceEngine PUBLIC FORCE_EDITOR_IMNODES)
 endif()
 
 # Precompiled header

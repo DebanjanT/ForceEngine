@@ -13,6 +13,9 @@ namespace Force
 
         void SetContext(Scene* scene);
         void OnImGuiRender();
+        void OnImGui() { OnImGuiRender(); }
+
+        bool m_Open = true;
 
         Entity GetSelectedEntity() const { return m_SelectedEntity; }
         void SetSelectedEntity(Entity entity) { m_SelectedEntity = entity; }
